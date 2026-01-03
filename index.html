@@ -14,6 +14,9 @@
     }
     body { -webkit-tap-highlight-color: transparent; }
     .x-scroll { -webkit-overflow-scrolling: touch; }
+
+    /* важно для sticky header: чтобы не "дергалось" */
+    thead th { position: sticky; top: 0; z-index: 20; }
   </style>
 </head>
 
@@ -137,17 +140,14 @@
     3: "AE2:AM150"
   };
 
-  // ===== State =====
   let currentGroup = 1;
   let headers = [];
   let rows = [];
   let labelIndex = -1;
 
-  // отображаемые колонки (set индексов)
-  let visibleCols = new Set();        // применённые
-  let draftVisibleCols = new Set();   // черновик в модалке
+  let visibleCols = new Set();
+  let draftVisibleCols = new Set();
 
-  // ===== UI =====
   const tab1 = document.getElementById("tab1");
   const tab2 = document.getElementById("tab2");
   const tab3 = document.getElementById("tab3");
@@ -159,7 +159,6 @@
   const statusEl = document.getElementById("status");
   const hintEl = document.getElementById("hint");
 
-  // modal
   const modal = document.getElementById("modal");
   const modalBackdrop = document.getElementById("modalBackdrop");
   const closeModal = document.getElementById("closeModal");
@@ -170,7 +169,6 @@
   const selectMin = document.getElementById("selectMin");
   const colsCounter = document.getElementById("colsCounter");
 
-  // ===== Helpers =====
   function applyTabs(active){
     [tab1, tab2, tab3].forEach((b,i)=>{
       if(i+1===active){
@@ -205,7 +203,6 @@
       .replaceAll("\u00A0","");
   }
 
-  // true/false скрываем
   function cellText(v){
     if (v === true || v === false) return "";
     if (v === null || v === undefined) return "";
@@ -226,7 +223,6 @@
       .replaceAll("'", "&#039;");
   }
 
-  // ===== Detect label column =====
   function detectLabelIndex() {
     const target = norm("№метки");
     let idx = headers.findIndex(h => norm(h) === target);
@@ -266,16 +262,13 @@
     }
   }
 
-  // ===== Visible columns persistence =====
   function storageKey() {
     return `itsww_visibleCols_group_${currentGroup}`;
   }
 
   function loadVisibleColsFromStorage() {
-    // по умолчанию — все колонки
     const colCount = headers.length || 0;
     const all = new Set(Array.from({length: colCount}, (_,i)=>i));
-
     if (labelIndex !== -1) all.add(labelIndex);
 
     try {
@@ -286,9 +279,7 @@
       if (!Array.isArray(arr)) { visibleCols = all; return; }
 
       const set = new Set(arr.filter(n => Number.isInteger(n) && n >= 0 && n < colCount));
-      // гарантируем №метки
       if (labelIndex !== -1) set.add(labelIndex);
-      // если вдруг всё отключили — вернём хотя бы №метки/или все
       if (set.size === 0) {
         if (labelIndex !== -1) set.add(labelIndex);
         else { visibleCols = all; return; }
@@ -306,17 +297,14 @@
   }
 
   function getVisibleColIndices() {
-    // сохраняем естественный порядок колонок
     const res = [];
     for (let i=0; i<headers.length; i++) {
       if (visibleCols.has(i)) res.push(i);
     }
-    // гарантия на всякий случай
     if (labelIndex !== -1 && !res.includes(labelIndex)) res.unshift(labelIndex);
     return res;
   }
 
-  // ===== Data load =====
   async function loadGroup(n){
     currentGroup = n;
     applyTabs(n);
@@ -348,7 +336,6 @@
     }
   }
 
-  // ===== Filtering (only by №метки) =====
   function renderFiltered(){
     const q = String(searchEl.value || "").trim();
     let filtered = rows;
@@ -360,14 +347,14 @@
     renderTable(filtered);
   }
 
-  // ===== Render table with visible columns =====
   function renderTable(data){
     const colIdx = getVisibleColIndices();
 
+    // ✅ sticky headers: добавили sticky + top-0 + z-20 + непрозрачный фон
     thead.innerHTML = `
       <tr>
         ${colIdx.map(i=>`
-          <th class="px-3 py-3 text-left font-semibold border-b whitespace-nowrap">
+          <th class="px-3 py-3 text-left font-semibold border-b whitespace-nowrap bg-slate-100">
             ${escapeHtml(headers[i] || "—")}
           </th>`).join("")}
       </tr>
@@ -394,13 +381,9 @@
     `).join("");
   }
 
-  // ===== Columns modal =====
   function openModal(){
-    // черновик = текущий выбор
     draftVisibleCols = new Set(visibleCols);
-    // всегда держим №метки
     if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
-
     renderColsList();
     modal.classList.remove("hidden");
   }
@@ -432,10 +415,7 @@
       cb.addEventListener("change", () => {
         if (cb.checked) draftVisibleCols.add(i);
         else draftVisibleCols.delete(i);
-
-        // жёсткая гарантия №метки
         if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
-
         updateCounter();
       });
 
@@ -452,15 +432,12 @@
 
   function applyDraft(){
     visibleCols = new Set(draftVisibleCols);
-    if (labelIndex !== -1) visibleCols.add(labelIndex); // гарантия
-
-    // если вдруг выключили всё кроме №метки — это нормально
+    if (labelIndex !== -1) visibleCols.add(labelIndex);
     saveVisibleColsToStorage();
     closeModalUI();
     renderFiltered();
   }
 
-  // quick actions
   function showAllCols(){
     draftVisibleCols = new Set(Array.from({length: headers.length}, (_,i)=>i));
     if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
@@ -473,7 +450,6 @@
     renderColsList();
   }
 
-  // ===== Events =====
   tab1.onclick = ()=>loadGroup(1);
   tab2.onclick = ()=>loadGroup(2);
   tab3.onclick = ()=>loadGroup(3);
@@ -489,7 +465,6 @@
   selectAll.onclick = showAllCols;
   selectMin.onclick = showOnlyLabel;
 
-  // ===== Init =====
   applyTabs(1);
   loadGroup(1);
 </script>
