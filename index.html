@@ -14,10 +14,7 @@
     }
     body { -webkit-tap-highlight-color: transparent; }
 
-    /* Скролл именно у таблицы, чтобы sticky заголовки работали 100% */
     .table-scroll { -webkit-overflow-scrolling: touch; }
-
-    /* sticky заголовков */
     thead th { position: sticky; top: 0; z-index: 30; }
   </style>
 </head>
@@ -77,7 +74,6 @@
   <div id="status" class="hidden mb-2 text-sm text-slate-600"></div>
 
   <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden h-full">
-    <!-- ✅ Вертикальный скролл тут -->
     <div id="tableScroll" class="table-scroll overflow-auto h-full">
       <table class="min-w-full text-sm">
         <thead id="thead" class="bg-slate-50"></thead>
@@ -113,9 +109,7 @@
           </button>
         </div>
 
-        <div id="colsList" class="max-h-[55vh] overflow-auto pr-1 space-y-2">
-          <!-- чекбоксы сюда -->
-        </div>
+        <div id="colsList" class="max-h-[55vh] overflow-auto pr-1 space-y-2"></div>
       </div>
 
       <div class="px-4 py-3 border-t border-slate-200 flex items-center gap-2">
@@ -134,6 +128,9 @@
 </div>
 
 <script>
+  // =======================
+  // НАСТРОЙКИ ТАБЛИЦЫ
+  // =======================
   const SHEET_ID = "1CU56AZdWC9dCvkf_z6CWMtrgfuWRCG3HYx7hp79vI_c";
   const SHEET_NAME = "Для печати🖨️";
 
@@ -143,6 +140,19 @@
     3: "AE2:AM150"
   };
 
+  // =======================
+  // НАСТРОЙКИ ТРИГГЕРА (Apps Script Web App)
+  // =======================
+  // 1) Вставь сюда URL веб-приложения Apps Script (после деплоя)
+  // Пример: "https://script.google.com/macros/s/AKfycb....../exec"
+  const TRIGGER_WEBAPP_URL = ""; // <-- заполни
+
+  // 2) Токен (любой секрет), чтобы никто посторонний не дергал обновление
+  const TRIGGER_TOKEN = ""; // <-- заполни (и такой же поставь в Apps Script)
+
+  // =======================
+  // STATE
+  // =======================
   let currentGroup = 1;
   let headers = [];
   let rows = [];
@@ -151,6 +161,12 @@
   let visibleCols = new Set();
   let draftVisibleCols = new Set();
 
+  // счетчик №метки по группам (чтобы показывать на вкладках)
+  const labelCounts = { 1: 0, 2: 0, 3: 0 };
+
+  // =======================
+  // UI
+  // =======================
   const tab1 = document.getElementById("tab1");
   const tab2 = document.getElementById("tab2");
   const tab3 = document.getElementById("tab3");
@@ -173,9 +189,18 @@
   const selectMin = document.getElementById("selectMin");
   const colsCounter = document.getElementById("colsCounter");
 
+  // =======================
+  // HELPERS
+  // =======================
   function applyTabs(active){
-    [tab1, tab2, tab3].forEach((b,i)=>{
-      if(i+1===active){
+    const buttons = [tab1, tab2, tab3];
+    buttons.forEach((b,i)=>{
+      const group = i + 1;
+      const count = labelCounts[group] || 0;
+      const baseName = group === 1 ? "Группа 1" : (group === 2 ? "Группа 2" : "Ночь");
+      b.textContent = `${baseName} (${count})`;
+
+      if(group===active){
         b.style.background = "var(--brand-blue)";
         b.style.color = "white";
       } else {
@@ -207,7 +232,6 @@
       .replaceAll("\u00A0","");
   }
 
-  // true/false скрываем
   function cellText(v){
     if (v === true || v === false) return "";
     if (v === null || v === undefined) return "";
@@ -267,7 +291,18 @@
     }
   }
 
-  // ✅ ключ хранения: отдельно по группе + по набору заголовков (чтобы точно не смешивалось)
+  function computeLabelCount(){
+    if (labelIndex === -1) return 0;
+    let cnt = 0;
+    for (const r of rows) {
+      if (isIntLike(r[labelIndex])) cnt++;
+    }
+    return cnt;
+  }
+
+  // =======================
+  // Columns: per group storage
+  // =======================
   function storageKey() {
     const signature = headers.map(h => norm(h)).join("|");
     return `itsww_visibleCols_v2_group_${currentGroup}_${signature}`;
@@ -312,13 +347,14 @@
     return res;
   }
 
+  // =======================
+  // Data load
+  // =======================
   async function loadGroup(n){
     currentGroup = n;
     applyTabs(n);
     searchEl.value = "";
     setStatus("Загрузка...");
-
-    // при переключении группы — возвращаем скролл таблицы вверх
     tableScroll.scrollTop = 0;
 
     const range = GROUPS[n];
@@ -336,6 +372,11 @@
       rows = table.rows.map(r => (r.c || []).map(c => cellText(c ? c.v : "")));
 
       detectLabelIndex();
+
+      // ✅ считаем количество №метки для текущей вкладки и обновляем надписи вкладок
+      labelCounts[currentGroup] = computeLabelCount();
+      applyTabs(currentGroup);
+
       loadVisibleColsFromStorage();
 
       clearStatus();
@@ -346,6 +387,9 @@
     }
   }
 
+  // =======================
+  // Filtering (only by №метки)
+  // =======================
   function renderFiltered(){
     const q = String(searchEl.value || "").trim();
     let filtered = rows;
@@ -357,10 +401,12 @@
     renderTable(filtered);
   }
 
+  // =======================
+  // Render
+  // =======================
   function renderTable(data){
     const colIdx = getVisibleColIndices();
 
-    // ✅ sticky заголовок внутри tableScroll (вертикальный скролл у контейнера)
     thead.innerHTML = `
       <tr>
         ${colIdx.map(i=>`
@@ -391,6 +437,9 @@
     `).join("");
   }
 
+  // =======================
+  // Modal
+  // =======================
   function openModal(){
     draftVisibleCols = new Set(visibleCols);
     if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
@@ -398,9 +447,7 @@
     modal.classList.remove("hidden");
   }
 
-  function closeModalUI(){
-    modal.classList.add("hidden");
-  }
+  function closeModalUI(){ modal.classList.add("hidden"); }
 
   function renderColsList(){
     const colCount = headers.length;
@@ -460,12 +507,56 @@
     renderColsList();
   }
 
+  // =======================
+  // Trigger call
+  // =======================
+  async function runTriggerIfConfigured(){
+    if (!TRIGGER_WEBAPP_URL) return { ok:true, skipped:true };
+
+    try {
+      // POST: token в query (проще)
+      const url = `${TRIGGER_WEBAPP_URL}?token=${encodeURIComponent(TRIGGER_TOKEN)}`;
+      const res = await fetch(url, { method: "POST" });
+      const txt = await res.text();
+      return { ok: res.ok, text: txt };
+    } catch (e) {
+      return { ok:false, text: String(e) };
+    }
+  }
+
+  async function refreshAll(){
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "…";
+
+    // 1) дергаем триггер (если задан)
+    setStatus("Обновляю данные…");
+    const trig = await runTriggerIfConfigured();
+
+    // 2) грузим таблицу (всегда)
+    await loadGroup(currentGroup);
+
+    // 3) статус
+    if (trig && trig.skipped) {
+      clearStatus();
+    } else if (trig && trig.ok) {
+      clearStatus();
+    } else {
+      setStatus("Триггер не сработал (проверь Web App URL/Token)");
+    }
+
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Обновить";
+  }
+
+  // =======================
+  // Events
+  // =======================
   tab1.onclick = ()=>loadGroup(1);
   tab2.onclick = ()=>loadGroup(2);
   tab3.onclick = ()=>loadGroup(3);
 
   searchEl.oninput = renderFiltered;
-  refreshBtn.onclick = ()=>loadGroup(currentGroup);
+  refreshBtn.onclick = refreshAll;
 
   columnsBtn.onclick = openModal;
   modalBackdrop.onclick = closeModalUI;
@@ -475,6 +566,7 @@
   selectAll.onclick = showAllCols;
   selectMin.onclick = showOnlyLabel;
 
+  // Init
   applyTabs(1);
   loadGroup(1);
 </script>
