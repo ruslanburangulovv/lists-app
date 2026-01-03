@@ -14,8 +14,6 @@
     }
     body { -webkit-tap-highlight-color: transparent; }
     .table-scroll { -webkit-overflow-scrolling: touch; }
-
-    /* sticky header */
     thead th { position: sticky; top: 0; z-index: 30; }
   </style>
 </head>
@@ -67,13 +65,14 @@
       </div>
 
       <div id="hint" class="hidden text-xs text-slate-500"></div>
+
+      <!-- Статус из Q1:R2 -->
+      <div id="status" class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"></div>
     </div>
   </div>
 </header>
 
-<main class="max-w-6xl mx-auto px-3 sm:px-4 py-3 h-[calc(100vh-14rem)]">
-  <div id="status" class="hidden mb-2 text-sm text-slate-600"></div>
-
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-3 h-[calc(100vh-16.5rem)]">
   <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden h-full">
     <div id="tableScroll" class="table-scroll overflow-auto h-full">
       <table class="min-w-full text-sm">
@@ -135,6 +134,10 @@
   const SHEET_ID = "1CU56AZdWC9dCvkf_z6CWMtrgfuWRCG3HYx7hp79vI_c";
   const SHEET_NAME = "Для печати🖨️";
 
+  // Статус (лист + диапазон)
+  const STATUS_SHEET_NAME = "Свод_журналов_СПГ+ТСБ";
+  const STATUS_RANGE = "Q1:R2";
+
   const GROUPS = {
     1: "D2:M150",
     2: "R2:Z150",
@@ -148,12 +151,20 @@
   const TRIGGER_TOKEN = "12345";
 
   // =======================
+  // Sorting & highlight
+  // =======================
+  const STATUS_COL_NAME = "Статус обхода";
+  const STATUS_WAIT = "Ожидание получения данных";
+  const STATUS_DONE = "Данные зафиксированы";
+
+  // =======================
   // State
   // =======================
   let currentGroup = 1;
   let headers = [];
   let rows = [];
   let labelIndex = -1;
+  let walkStatusIndex = -1;
 
   let visibleCols = new Set();
   let draftVisibleCols = new Set();
@@ -171,9 +182,9 @@
   const columnsBtn = document.getElementById("columnsBtn");
   const thead = document.getElementById("thead");
   const tbody = document.getElementById("tbody");
-  const statusEl = document.getElementById("status");
   const hintEl = document.getElementById("hint");
   const tableScroll = document.getElementById("tableScroll");
+  const statusEl = document.getElementById("status");
 
   const modal = document.getElementById("modal");
   const modalBackdrop = document.getElementById("modalBackdrop");
@@ -188,13 +199,14 @@
   // =======================
   // Helpers
   // =======================
-  function setStatus(text){
+  function setStatusBox(text){
+    if (!text) {
+      statusEl.classList.add("hidden");
+      statusEl.innerHTML = "";
+      return;
+    }
     statusEl.classList.remove("hidden");
-    statusEl.textContent = text;
-  }
-  function clearStatus(){
-    statusEl.classList.add("hidden");
-    statusEl.textContent = "";
+    statusEl.innerHTML = text;
   }
 
   function setHint(text){
@@ -211,7 +223,7 @@
   }
 
   function cellText(v){
-    // убираем true/false (это та самая колонка TRUE, чтобы не мешала)
+    // чтобы "true" не лез в UI
     if (v === true || v === false) return "";
     if (v === null || v === undefined) return "";
     return String(v);
@@ -299,12 +311,39 @@
     }
   }
 
+  function detectWalkStatusIndex() {
+    const t = norm(STATUS_COL_NAME);
+    walkStatusIndex = headers.findIndex(h => norm(h) === t);
+  }
+
+  function sortRowsByWalkStatus() {
+    if (walkStatusIndex === -1) return;
+
+    const rank = (v) => {
+      const s = String(v ?? "").trim();
+      if (s === STATUS_WAIT) return 0;
+      if (s === STATUS_DONE) return 1;
+      return 2; // всё остальное в конец
+    };
+
+    // стабильная сортировка: добавим индекс
+    rows = rows
+      .map((r, i) => ({ r, i }))
+      .sort((a, b) => {
+        const ra = rank(a.r[walkStatusIndex]);
+        const rb = rank(b.r[walkStatusIndex]);
+        if (ra !== rb) return ra - rb;
+        return a.i - b.i;
+      })
+      .map(x => x.r);
+  }
+
   // =======================
   // Columns (per-group)
   // =======================
   function storageKey() {
     const signature = headers.map(h => norm(h)).join("|");
-    return `itsww_visibleCols_v4_group_${currentGroup}_${signature}`;
+    return `itsww_visibleCols_v5_group_${currentGroup}_${signature}`;
   }
 
   function loadVisibleColsFromStorage() {
@@ -344,14 +383,60 @@
   }
 
   // =======================
+  // Status cell loader (Q1:R2)
+  // =======================
+  async function loadStatusBox(){
+    const url =
+      `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?` +
+      `sheet=${encodeURIComponent(STATUS_SHEET_NAME)}&range=${encodeURIComponent(STATUS_RANGE)}&headers=0`;
+
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      const json = JSON.parse(text.substring(47).slice(0,-2));
+      const table = json.table;
+
+      const vals = (table.rows || []).map(r => (r.c || []).map(c => cellText(c ? c.v : "")));
+
+      // Сформируем красивый текст: строки через <br>, пустые пропускаем
+      const lines = [];
+      for (const row of vals) {
+        const line = row.map(x => String(x || "").trim()).filter(Boolean).join(" ");
+        if (line) lines.push(line);
+      }
+
+      if (!lines.length) {
+        setStatusBox("");
+        return;
+      }
+
+      // Если есть "идет обновление" — подсветим аккуратно
+      const html = `
+        <div class="flex items-start gap-2">
+          <div class="mt-0.5 h-2.5 w-2.5 rounded-full" style="background:var(--brand-teal)"></div>
+          <div class="leading-5">
+            ${lines.map(l => `<div>${escapeHtml(l)}</div>`).join("")}
+          </div>
+        </div>
+      `;
+      setStatusBox(html);
+    } catch (e) {
+      // статус необязателен: если лист недоступен/ошибка — просто скрываем
+      setStatusBox("");
+    }
+  }
+
+  // =======================
   // Data
   // =======================
   async function loadGroup(n){
     currentGroup = n;
     applyTabs(n);
     searchEl.value = "";
-    setStatus("Загрузка...");
     tableScroll.scrollTop = 0;
+
+    // обновим статус (чтобы всегда показывалось актуальное)
+    loadStatusBox();
 
     const range = GROUPS[n];
     const url =
@@ -368,17 +453,24 @@
       rows = table.rows.map(r => (r.c || []).map(c => cellText(c ? c.v : "")));
 
       detectLabelIndex();
+      detectWalkStatusIndex();
+
+      // сортировка по "Статус обхода"
+      sortRowsByWalkStatus();
 
       labelCounts[currentGroup] = computeLabelCount();
       applyTabs(currentGroup);
 
       loadVisibleColsFromStorage();
-
-      clearStatus();
       renderFiltered();
     } catch (e) {
       console.error(e);
-      setStatus("Ошибка загрузки данных");
+      // покажем статус из таблицы (если есть) и таблицу "ошибка"
+      setStatusBox(`<div class="text-red-600 font-semibold">Ошибка загрузки данных</div>`);
+      thead.innerHTML = "";
+      tbody.innerHTML = `
+        <tr><td class="px-3 py-10 text-center text-slate-500">Ошибка загрузки</td></tr>
+      `;
     }
   }
 
@@ -416,14 +508,27 @@
       return;
     }
 
-    tbody.innerHTML = data.map((row,rIdx)=>`
-      <tr class="${rIdx%2?'bg-slate-50':''}">
-        ${colIdx.map(i=>`
-          <td class="px-3 py-3 whitespace-nowrap">
-            ${escapeHtml(row[i] ?? "")}
-          </td>`).join("")}
-      </tr>
-    `).join("");
+    tbody.innerHTML = data.map((row,rIdx)=> {
+      const st = (walkStatusIndex !== -1) ? String(row[walkStatusIndex] ?? "").trim() : "";
+      const isDone = (st === STATUS_DONE);
+
+      const rowClass = isDone
+        ? "bg-emerald-50"
+        : (rIdx%2 ? "bg-slate-50" : "");
+
+      const cellClass = isDone
+        ? "px-3 py-3 whitespace-nowrap border-l-4 border-emerald-400"
+        : "px-3 py-3 whitespace-nowrap";
+
+      return `
+        <tr class="${rowClass}">
+          ${colIdx.map(i=>`
+            <td class="${cellClass}">
+              ${escapeHtml(row[i] ?? "")}
+            </td>`).join("")}
+        </tr>
+      `;
+    }).join("");
   }
 
   // =======================
@@ -503,10 +608,7 @@
     if (!TRIGGER_WEBAPP_URL) return { ok:true, skipped:true };
 
     const url = `${TRIGGER_WEBAPP_URL}?token=${encodeURIComponent(TRIGGER_TOKEN)}&t=${Date.now()}`;
-
-    // "маячок" GET — запускает скрипт без CORS/redirect проблем
-    const img = new Image();
-    img.src = url;
+    (new Image()).src = url; // маячок
 
     return { ok:true, text:"sent" };
   }
@@ -514,15 +616,19 @@
   async function refreshAll(){
     refreshBtn.disabled = true;
     refreshBtn.textContent = "…";
-    setStatus("Обновляю данные…");
 
-    // Запускаем Apps Script (не читаем ответ — чтобы не ловить CORS)
+    // запускаем обновление на стороне Apps Script
     await runTrigger();
 
-    // Перечитываем таблицу
+    // сразу покажем статус из Q1:R2 ("Идет обновление..." / время)
+    await loadStatusBox();
+
+    // перечитываем текущую вкладку
     await loadGroup(currentGroup);
 
-    clearStatus();
+    // ещё раз подхватим статус после чтения
+    await loadStatusBox();
+
     refreshBtn.disabled = false;
     refreshBtn.textContent = "Обновить";
   }
