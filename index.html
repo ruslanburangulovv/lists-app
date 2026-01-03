@@ -161,15 +161,13 @@
   const STATUS_DONE = "Данные зафиксированы";
 
   // =======================
-// Live polling settings
-// =======================
-const LIVE_POLL_MS = 7000;     // read status every 5s
-const LIVE_MAX_MS  = 120000;   // max 2 min
-
-  let liveTimer = null;
-  let liveStartedAt = 0;
-  let liveLastRaw = "";
-  let livePhase = "idle"; // "waitingStart" | "waitingFinish" | "idle"
+  // Two-stage status check
+  // =======================
+  const POLL_INTERVAL_MS = 2000;   // каждые 2 сек
+  const START_TIMEOUT_MS = 10000;  // 10 сек на старт
+  let pollTimer = null;
+  let pollStartedAt = 0;
+  let pollStage = "idle"; // "waitingStart" | "waitingFinish" | "idle"
 
   // =======================
   // State
@@ -369,7 +367,7 @@ const LIVE_MAX_MS  = 120000;   // max 2 min
   // =======================
   function storageKey() {
     const signature = headers.map(h => norm(h)).join("|");
-    return `itsww_visibleCols_v8_group_${currentGroup}_${signature}`;
+    return `itsww_visibleCols_v9_group_${currentGroup}_${signature}`;
   }
 
   function loadVisibleColsFromStorage() {
@@ -409,12 +407,12 @@ const LIVE_MAX_MS  = 120000;   // max 2 min
   }
 
   // =======================
-  // Status loader (Q1:R2) + detect updating/finished
+  // Status loader (Q1:R2)
   // =======================
-  function isUpdatingRaw(raw){
+  function isUpdating(raw){
     return String(raw || "").toLowerCase().includes("идет обновление");
   }
-  function hasTimeLike(raw){
+  function hasTime(raw){
     return /\b\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}:\d{2}\b/.test(String(raw || ""));
   }
 
@@ -458,12 +456,10 @@ const LIVE_MAX_MS  = 120000;   // max 2 min
   async function loadStatusBox(){
     try {
       const { raw, html } = await fetchStatusRaw();
-      liveLastRaw = raw;
       setStatusBoxHtml(html);
       return raw;
     } catch {
       setStatusBoxHtml("");
-      liveLastRaw = "";
       return "";
     }
   }
@@ -477,7 +473,7 @@ const LIVE_MAX_MS  = 120000;   // max 2 min
     searchEl.value = "";
     tableScroll.scrollTop = 0;
 
-    // статус подтянем (не блокируем)
+    // подтянуть статус
     loadStatusBox();
 
     const range = GROUPS[n];
@@ -648,75 +644,58 @@ const LIVE_MAX_MS  = 120000;   // max 2 min
   }
 
   // =======================
-  // Live polling
+  // Two-stage polling logic
   // =======================
-  function stopLive(){
-    if (liveTimer) clearInterval(liveTimer);
-    liveTimer = null;
-    liveStartedAt = 0;
+  function stopPolling(){
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+    pollStartedAt = 0;
+    pollStage = "idle";
+
+    refreshBtn.disabled = false;
+    refreshBtn.textContent = "Обновить";
   }
 
-  async function liveTick(){
+  async function pollTick(){
     const raw = await loadStatusBox();
+    const elapsed = Date.now() - pollStartedAt;
 
-    // timeout guard
-    if (Date.now() - liveStartedAt > LIVE_MAX_MS) {
-      stopLive();
-      livePhase = "idle";
-      refreshBtn.disabled = false;
-      refreshBtn.textContent = "Обновить";
-      return;
-    }
-
-    const updating = isUpdatingRaw(raw);
-    const hasTime = hasTimeLike(raw);
-
-    // waiting for "Идет обновление..."
-    if (livePhase === "waitingStart") {
-      if (updating) {
-        livePhase = "waitingFinish";
+    // Stage 1: wait start (up to 10s)
+    if (pollStage === "waitingStart") {
+      if (isUpdating(raw)) {
+        pollStage = "waitingFinish";
         return;
       }
-      // if immediately got time, it finished very fast
-      if (!updating && hasTime) {
-        stopLive();
-        livePhase = "idle";
-        await loadGroup(currentGroup);
-        await loadStatusBox();
-        refreshBtn.disabled = false;
-        refreshBtn.textContent = "Обновить";
+      if (elapsed >= START_TIMEOUT_MS) {
+        stopPolling();
         return;
       }
       return;
     }
 
-    // waiting for finish: time appears and "Идет..." disappears
-    if (livePhase === "waitingFinish") {
-      if (!updating && hasTime) {
-        stopLive();
-        livePhase = "idle";
+    // Stage 2: wait finish
+    if (pollStage === "waitingFinish") {
+      if (!isUpdating(raw) && hasTime(raw)) {
+        stopPolling();
         await loadGroup(currentGroup);
         await loadStatusBox();
-        refreshBtn.disabled = false;
-        refreshBtn.textContent = "Обновить";
       }
     }
   }
 
   async function refreshAllLive(){
-    stopLive();
+    stopPolling();
 
     refreshBtn.disabled = true;
     refreshBtn.textContent = "…";
 
     await runTrigger();
 
-    liveStartedAt = Date.now();
-    livePhase = "waitingStart";
-
     await loadStatusBox();
 
-    liveTimer = setInterval(liveTick, LIVE_POLL_MS);
+    pollStartedAt = Date.now();
+    pollStage = "waitingStart";
+    pollTimer = setInterval(pollTick, POLL_INTERVAL_MS);
   }
 
   // =======================
