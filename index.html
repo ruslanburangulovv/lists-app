@@ -161,10 +161,11 @@
   const STATUS_DONE = "Данные зафиксированы";
 
   // =======================
-  // Live polling settings
-  // =======================
-  const LIVE_POLL_MS = 2000;     // read status every 2s
-  const LIVE_MAX_MS  = 120000;   // max 2 min
+// Live polling settings
+// =======================
+const LIVE_POLL_MS = 5000;     // read status every 5s
+const LIVE_MAX_MS  = 120000;   // max 2 min
+
   let liveTimer = null;
   let liveStartedAt = 0;
   let liveLastRaw = "";
