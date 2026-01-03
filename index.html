@@ -14,6 +14,8 @@
     }
     body { -webkit-tap-highlight-color: transparent; }
     .table-scroll { -webkit-overflow-scrolling: touch; }
+
+    /* sticky header */
     thead th { position: sticky; top: 0; z-index: 30; }
   </style>
 </head>
@@ -140,12 +142,9 @@
   };
 
   // =======================
-  // Apps Script Web App (твой URL)
+  // Apps Script Web App
   // =======================
-  const TRIGGER_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbUZ7wYhYZxJu8_QvJMq174aPZ6lPeHu5PY6jqfyGbE1QgxZv0KwFvgsDt_A2-wXUWA/exec";
-
-  // ⚠️ Токен должен совпадать с WEBAPP_TOKEN в Apps Script
-  // Если у тебя уже другой — поставь тут такой же.
+  const TRIGGER_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzU7wYhYZxJu8_QvJMq174aPZ6lPeHu5PY6jqfyGbE1QgxZv0KwFVvgsDt_A2-wXUWA/exec";
   const TRIGGER_TOKEN = "12345";
 
   // =======================
@@ -212,6 +211,7 @@
   }
 
   function cellText(v){
+    // убираем true/false (это та самая колонка TRUE, чтобы не мешала)
     if (v === true || v === false) return "";
     if (v === null || v === undefined) return "";
     return String(v);
@@ -251,9 +251,11 @@
       if(group===active){
         b.style.background = "var(--brand-blue)";
         b.style.color = "white";
+        b.classList.add("border-transparent");
       } else {
         b.style.background = "";
         b.style.color = "";
+        b.classList.remove("border-transparent");
       }
     });
   }
@@ -302,7 +304,7 @@
   // =======================
   function storageKey() {
     const signature = headers.map(h => norm(h)).join("|");
-    return `itsww_visibleCols_v3_group_${currentGroup}_${signature}`;
+    return `itsww_visibleCols_v4_group_${currentGroup}_${signature}`;
   }
 
   function loadVisibleColsFromStorage() {
@@ -319,7 +321,7 @@
 
       const set = new Set(arr.filter(n => Number.isInteger(n) && n >= 0 && n < colCount));
       if (labelIndex !== -1) set.add(labelIndex);
-      if (set.size === 0) set.add(labelIndex);
+      if (set.size === 0 && labelIndex !== -1) set.add(labelIndex);
       visibleCols = set;
     } catch {
       visibleCols = all;
@@ -495,19 +497,18 @@
   }
 
   // =======================
-  // Trigger call
+  // Trigger call (NO CORS)
   // =======================
   async function runTrigger(){
     if (!TRIGGER_WEBAPP_URL) return { ok:true, skipped:true };
 
-    try {
-      const url = `${TRIGGER_WEBAPP_URL}?token=${encodeURIComponent(TRIGGER_TOKEN)}`;
-      const res = await fetch(url, { method: "POST" });
-      const txt = await res.text();
-      return { ok: res.ok && txt.includes("ok"), text: txt };
-    } catch (e) {
-      return { ok:false, text: String(e) };
-    }
+    const url = `${TRIGGER_WEBAPP_URL}?token=${encodeURIComponent(TRIGGER_TOKEN)}&t=${Date.now()}`;
+
+    // "маячок" GET — запускает скрипт без CORS/redirect проблем
+    const img = new Image();
+    img.src = url;
+
+    return { ok:true, text:"sent" };
   }
 
   async function refreshAll(){
@@ -515,13 +516,13 @@
     refreshBtn.textContent = "…";
     setStatus("Обновляю данные…");
 
-    const trig = await runTrigger();
+    // Запускаем Apps Script (не читаем ответ — чтобы не ловить CORS)
+    await runTrigger();
+
+    // Перечитываем таблицу
     await loadGroup(currentGroup);
 
-    if (trig && trig.skipped) clearStatus();
-    else if (trig && trig.ok) clearStatus();
-    else setStatus("Триггер не сработал (проверь токен / доступ web app)");
-
+    clearStatus();
     refreshBtn.disabled = false;
     refreshBtn.textContent = "Обновить";
   }
