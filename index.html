@@ -4,9 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ITS Work Watch — Списки</title>
-
   <script src="https://cdn.tailwindcss.com"></script>
-
   <style>
     :root{
       --brand-blue:#0047BB;
@@ -31,14 +29,13 @@
     </div>
 
     <div class="pb-3 space-y-2">
-      <!-- Tabs -->
-      <div class="grid grid-cols-3 gap-2">
-        <button id="tab1" class="h-10 rounded-xl text-sm font-semibold border">Группа 1</button>
-        <button id="tab2" class="h-10 rounded-xl text-sm font-semibold border">Группа 2</button>
-        <button id="tab3" class="h-10 rounded-xl text-sm font-semibold border">Ночь</button>
+      <div class="grid grid-cols-4 gap-2">
+        <button id="tab1" class="h-10 rounded-xl text-xs sm:text-sm font-semibold border">Группа 1</button>
+        <button id="tab2" class="h-10 rounded-xl text-xs sm:text-sm font-semibold border">Группа 2</button>
+        <button id="tab3" class="h-10 rounded-xl text-xs sm:text-sm font-semibold border">Группа 3</button>
+        <button id="tab4" class="h-10 rounded-xl text-xs sm:text-sm font-semibold border">Ночь</button>
       </div>
 
-      <!-- Search + buttons -->
       <div class="flex gap-2 items-center">
         <input
           id="search"
@@ -47,34 +44,17 @@
           placeholder="Поиск по №метки..."
           class="min-w-0 flex-1 h-9 px-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-blue-100 text-sm"
         />
-        <button
-          id="columnsBtn"
-          class="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 text-sm font-semibold bg-white whitespace-nowrap"
-          title="Выбор колонок"
-        >
-          Колонки
-        </button>
-        <button
-          id="refreshBtn"
-          class="h-9 px-3 sm:px-4 rounded-xl border border-slate-200 text-sm font-semibold whitespace-nowrap"
-        >
-          Обновить
-        </button>
+        <button id="columnsBtn" class="h-9 px-3 rounded-xl border border-slate-200 text-sm font-semibold bg-white">Колонки</button>
+        <button id="refreshBtn" class="h-9 px-3 rounded-xl border border-slate-200 text-sm font-semibold">Обновить</button>
       </div>
 
-      <div class="text-xs text-slate-500">
-        Поиск работает только по колонке “№метки”. Колонки настраиваются отдельно для каждой вкладки.
-      </div>
-
-      <div id="hint" class="hidden text-xs text-slate-500"></div>
-
-      <!-- Live status from Q1:R2 -->
+      <div id="hint" class="hidden text-[10px] text-slate-500"></div>
       <div id="status" class="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"></div>
     </div>
   </div>
 </header>
 
-<main class="max-w-6xl mx-auto px-3 sm:px-4 py-3 h-[calc(100vh-16.0rem)]">
+<main class="max-w-6xl mx-auto px-3 sm:px-4 py-3 h-[calc(100vh-16.5rem)]">
   <div class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden h-full">
     <div id="tableScroll" class="table-scroll overflow-auto h-full">
       <table class="min-w-full text-sm">
@@ -85,43 +65,24 @@
   </div>
 </main>
 
-<!-- Columns modal -->
 <div id="modal" class="hidden fixed inset-0 z-50">
   <div id="modalBackdrop" class="absolute inset-0 bg-black/40"></div>
-
-  <div class="relative mx-auto max-w-lg px-3 sm:px-4 mt-6">
+  <div class="relative mx-auto max-w-lg px-3 mt-6">
     <div class="bg-white rounded-2xl shadow-lg border border-slate-200 overflow-hidden">
       <div class="px-4 py-3 border-b border-slate-200 flex items-center gap-3">
-        <div class="font-semibold">Выбор колонок (текущая группа)</div>
+        <div class="font-semibold">Колонки</div>
         <div class="flex-1"></div>
-        <button id="closeModal" class="h-9 w-9 rounded-xl border border-slate-200 hover:bg-slate-50">✕</button>
+        <button id="closeModal" class="h-9 w-9 rounded-xl border border-slate-200">✕</button>
       </div>
-
       <div class="px-4 py-3">
-        <div class="text-xs text-slate-500 mb-2">
-          “№метки” всегда отображается.
-        </div>
-
         <div class="flex gap-2 mb-3">
-          <button id="selectAll" class="h-9 px-3 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50">
-            Показать все
-          </button>
-          <button id="selectMin" class="h-9 px-3 rounded-xl border border-slate-200 text-sm font-semibold hover:bg-slate-50">
-            Только №метки
-          </button>
+          <button id="selectAll" class="h-8 px-3 rounded-lg border text-xs font-semibold">Все</button>
+          <button id="selectMin" class="h-8 px-3 rounded-lg border text-xs font-semibold">Сброс</button>
         </div>
-
-        <div id="colsList" class="max-h-[55vh] overflow-auto pr-1 space-y-2"></div>
+        <div id="colsList" class="max-h-[50vh] overflow-auto space-y-2"></div>
       </div>
-
-      <div class="px-4 py-3 border-t border-slate-200 flex items-center gap-2">
-        <button id="applyCols" class="h-10 px-4 rounded-xl text-white text-sm font-semibold"
-                style="background:var(--brand-blue)">
-          Применить
-        </button>
-        <button id="cancelCols" class="h-10 px-4 rounded-xl border border-slate-200 text-sm font-semibold">
-          Отмена
-        </button>
+      <div class="px-4 py-3 border-t flex items-center gap-2">
+        <button id="applyCols" class="h-10 px-4 rounded-xl text-white text-sm font-semibold bg-blue-600">Применить</button>
         <div class="flex-1"></div>
         <div class="text-xs text-slate-500" id="colsCounter"></div>
       </div>
@@ -130,70 +91,49 @@
 </div>
 
 <script>
-  // =======================
-  // Google Sheet
-  // =======================
+  // Настройки Google Sheet
   const SHEET_ID = "1CU56AZdWC9dCvkf_z6CWMtrgfuWRCG3HYx7hp79vI_c";
   const SHEET_NAME = "Для печати🖨️";
-
-  // Status sheet
   const STATUS_SHEET_NAME = "Свод_журналов_СПГ+ТСБ";
   const STATUS_RANGE = "Q1:R2";
 
-  // Groups ranges
+  // ОБНОВЛЕННЫЕ ДИАПАЗОНЫ
   const GROUPS = {
     1: "D2:M150",
     2: "R2:Z150",
-    3: "AE2:AM150"
+    3: "AE2:AM150",
+    4: "AR2:AZ150" 
   };
 
-  // =======================
-  // Apps Script Web App
-  // =======================
   const TRIGGER_WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzU7wYhYZxJu8_QvJMq174aPZ6lPeHu5PY6jqfyGbE1QgxZv0KwFVvgsDt_A2-wXUWA/exec";
   const TRIGGER_TOKEN = "12345";
-
-  // =======================
-  // Sorting & highlight
-  // =======================
   const STATUS_COL_NAME = "Статус обхода";
   const STATUS_WAIT = "Ожидание получения данных";
   const STATUS_DONE = "Данные зафиксированы";
 
-  // =======================
-  // Two-stage status check
-  // =======================
-  const POLL_INTERVAL_MS = 2000;   // каждые 2 сек
-  const START_TIMEOUT_MS = 10000;  // 10 сек на старт
-  let pollTimer = null;
-  let pollStartedAt = 0;
-  let pollStage = "idle"; // "waitingStart" | "waitingFinish" | "idle"
-
-  // =======================
   // State
-  // =======================
   let currentGroup = 1;
   let headers = [];
   let rows = [];
   let labelIndex = -1;
   let walkStatusIndex = -1;
-
   let visibleCols = new Set();
   let draftVisibleCols = new Set();
 
-  // tabs: done/total
   const labelCounts = {
     1: { total: 0, done: 0 },
     2: { total: 0, done: 0 },
-    3: { total: 0, done: 0 }
+    3: { total: 0, done: 0 },
+    4: { total: 0, done: 0 }
   };
 
-  // =======================
-  // UI
-  // =======================
-  const tab1 = document.getElementById("tab1");
-  const tab2 = document.getElementById("tab2");
-  const tab3 = document.getElementById("tab3");
+  // UI Elements
+  const tabs = [
+    document.getElementById("tab1"),
+    document.getElementById("tab2"),
+    document.getElementById("tab3"),
+    document.getElementById("tab4")
+  ];
   const searchEl = document.getElementById("search");
   const refreshBtn = document.getElementById("refreshBtn");
   const columnsBtn = document.getElementById("columnsBtn");
@@ -202,284 +142,53 @@
   const hintEl = document.getElementById("hint");
   const tableScroll = document.getElementById("tableScroll");
   const statusEl = document.getElementById("status");
-
   const modal = document.getElementById("modal");
-  const modalBackdrop = document.getElementById("modalBackdrop");
-  const closeModal = document.getElementById("closeModal");
   const colsList = document.getElementById("colsList");
-  const applyCols = document.getElementById("applyCols");
-  const cancelCols = document.getElementById("cancelCols");
-  const selectAll = document.getElementById("selectAll");
-  const selectMin = document.getElementById("selectMin");
   const colsCounter = document.getElementById("colsCounter");
 
-  // =======================
-  // Helpers
-  // =======================
+  // Функции
   function setStatusBoxHtml(html){
-    if (!html) {
-      statusEl.classList.add("hidden");
-      statusEl.innerHTML = "";
-      return;
-    }
+    if (!html) { statusEl.classList.add("hidden"); return; }
     statusEl.classList.remove("hidden");
     statusEl.innerHTML = html;
   }
 
   function setHint(text){
-    if (!text) { hintEl.classList.add("hidden"); hintEl.textContent = ""; return; }
+    if (!text) { hintEl.classList.add("hidden"); return; }
     hintEl.classList.remove("hidden");
     hintEl.textContent = text;
   }
 
-  function norm(s){
-    return String(s ?? "")
-      .toLowerCase()
-      .replaceAll(" ", "")
-      .replaceAll("\u00A0","");
-  }
+  function norm(s){ return String(s ?? "").toLowerCase().replace(/\s/g, ""); }
+  function cellText(v){ return (v === null || v === undefined) ? "" : String(v); }
+  function isIntLike(s){ return /^[0-9]+$/.test(String(s).trim()); }
+  function escapeHtml(str) { return String(str).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#039;"}[m])); }
 
-  function cellText(v){
-    if (v === true || v === false) return "";
-    if (v === null || v === undefined) return "";
-    return String(v);
-  }
-
-  function isIntLike(s){
-    const t = String(s ?? "").trim();
-    return /^[0-9]+$/.test(t);
-  }
-
-  function escapeHtml(str) {
-    return String(str)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
-  }
-
-  function computeLabelCount(){
-    if (labelIndex === -1) return 0;
-    let cnt = 0;
-    for (const r of rows) {
-      if (isIntLike(r[labelIndex])) cnt++;
-    }
-    return cnt;
-  }
-
-  function computeDoneCount(){
-    if (walkStatusIndex === -1) return 0;
-    let cnt = 0;
-    for (const r of rows) {
-      if (String(r[walkStatusIndex] ?? "").trim() === STATUS_DONE) cnt++;
-    }
-    return cnt;
-  }
-
-  function applyTabs(active){
-    const buttons = [tab1, tab2, tab3];
-    buttons.forEach((b,i)=>{
-      const group = i + 1;
-      const info = labelCounts[group] || { total:0, done:0 };
-      const baseName = group === 1 ? "Группа 1" : (group === 2 ? "Группа 2" : "Ночь");
-      b.textContent = `${baseName} (${info.done} / ${info.total})`;
-
-      if(group===active){
-        b.style.background = "var(--brand-blue)";
-        b.style.color = "white";
-        b.classList.add("border-transparent");
+  function updateTabsUI(){
+    tabs.forEach((btn, i) => {
+      const g = i + 1;
+      const info = labelCounts[g];
+      let name = g === 4 ? "Ночь" : `Группа ${g}`;
+      btn.textContent = `${name} (${info.done}/${info.total})`;
+      
+      if(g === currentGroup){
+        btn.classList.add("bg-[#0047BB]", "text-white", "border-transparent");
+        btn.classList.remove("bg-white", "text-slate-900");
       } else {
-        b.style.background = "";
-        b.style.color = "";
-        b.classList.remove("border-transparent");
+        btn.classList.remove("bg-[#0047BB]", "text-white", "border-transparent");
+        btn.classList.add("bg-white", "text-slate-900");
       }
     });
   }
 
-  function detectLabelIndex() {
-    const target = norm("№метки");
-    let idx = headers.findIndex(h => norm(h) === target);
-
-    if (idx === -1) {
-      idx = headers.findIndex(h => {
-        const nh = norm(h);
-        return nh.includes("метк") && (nh.includes("№") || nh.includes("no") || nh.includes("номер"));
-      });
-    }
-
-    if (idx === -1 && rows.length) {
-      const colCount = headers.length || (rows[0] ? rows[0].length : 0);
-      const scores = new Array(colCount).fill(0);
-
-      for (const r of rows) {
-        for (let c = 0; c < colCount; c++) {
-          const v = cellText(r[c]);
-          if (isIntLike(v)) scores[c] += 1;
-        }
-      }
-
-      let best = -1, bestScore = 0;
-      for (let c = 0; c < scores.length; c++) {
-        if (scores[c] > bestScore) { bestScore = scores[c]; best = c; }
-      }
-      if (best !== -1 && bestScore >= 3) idx = best;
-    }
-
-    labelIndex = idx;
-
-    if (labelIndex !== -1) {
-      const headerName = headers[labelIndex] ? ` (“${headers[labelIndex]}”)` : "";
-      setHint(`Колонка №метки: ${labelIndex + 1}${headerName}`);
-    } else {
-      setHint('Не удалось определить колонку “№метки”.');
-    }
-  }
-
-  function detectWalkStatusIndex() {
-    const t = norm(STATUS_COL_NAME);
-    walkStatusIndex = headers.findIndex(h => norm(h) === t);
-  }
-
-  function sortRowsByWalkStatus() {
-    if (walkStatusIndex === -1) return;
-
-    const rank = (v) => {
-      const s = String(v ?? "").trim();
-      if (s === STATUS_WAIT) return 0;
-      if (s === STATUS_DONE) return 1;
-      return 2;
-    };
-
-    rows = rows
-      .map((r, i) => ({ r, i }))
-      .sort((a, b) => {
-        const ra = rank(a.r[walkStatusIndex]);
-        const rb = rank(b.r[walkStatusIndex]);
-        if (ra !== rb) return ra - rb;
-        return a.i - b.i;
-      })
-      .map(x => x.r);
-  }
-
-  // =======================
-  // Columns (per-group)
-  // =======================
-  function storageKey() {
-    const signature = headers.map(h => norm(h)).join("|");
-    return `itsww_visibleCols_v9_group_${currentGroup}_${signature}`;
-  }
-
-  function loadVisibleColsFromStorage() {
-    const colCount = headers.length || 0;
-    const all = new Set(Array.from({length: colCount}, (_,i)=>i));
-    if (labelIndex !== -1) all.add(labelIndex);
-
-    try {
-      const raw = localStorage.getItem(storageKey());
-      if (!raw) { visibleCols = all; return; }
-
-      const arr = JSON.parse(raw);
-      if (!Array.isArray(arr)) { visibleCols = all; return; }
-
-      const set = new Set(arr.filter(n => Number.isInteger(n) && n >= 0 && n < colCount));
-      if (labelIndex !== -1) set.add(labelIndex);
-      if (set.size === 0 && labelIndex !== -1) set.add(labelIndex);
-      visibleCols = set;
-    } catch {
-      visibleCols = all;
-    }
-  }
-
-  function saveVisibleColsToStorage() {
-    try {
-      localStorage.setItem(storageKey(), JSON.stringify(Array.from(visibleCols)));
-    } catch {}
-  }
-
-  function getVisibleColIndices() {
-    const res = [];
-    for (let i=0; i<headers.length; i++) {
-      if (visibleCols.has(i)) res.push(i);
-    }
-    if (labelIndex !== -1 && !res.includes(labelIndex)) res.unshift(labelIndex);
-    return res;
-  }
-
-  // =======================
-  // Status loader (Q1:R2)
-  // =======================
-  function isUpdating(raw){
-    return String(raw || "").toLowerCase().includes("идет обновление");
-  }
-  function hasTime(raw){
-    return /\b\d{2}\.\d{2}\.\d{4}\s+\d{2}:\d{2}:\d{2}\b/.test(String(raw || ""));
-  }
-
-  async function fetchStatusRaw(){
-    const url =
-      `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?` +
-      `sheet=${encodeURIComponent(STATUS_SHEET_NAME)}&range=${encodeURIComponent(STATUS_RANGE)}&headers=0&t=${Date.now()}`;
-
-    const res = await fetch(url);
-    const text = await res.text();
-    const json = JSON.parse(text.substring(47).slice(0,-2));
-    const table = json.table;
-
-    const vals = (table.rows || []).map(r => (r.c || []).map(c => cellText(c ? c.v : "")));
-
-    const raw = vals
-      .flat()
-      .map(x => String(x || "").trim())
-      .filter(Boolean)
-      .join(" | ");
-
-    const lines = [];
-    for (const row of vals) {
-      const line = row.map(x => String(x || "").trim()).filter(Boolean).join(" ");
-      if (line) lines.push(line);
-    }
-
-    const html = lines.length
-      ? `
-        <div class="flex items-start gap-2">
-          <div class="mt-0.5 h-2.5 w-2.5 rounded-full" style="background:var(--brand-teal)"></div>
-          <div class="leading-5">
-            ${lines.map(l => `<div>${escapeHtml(l)}</div>`).join("")}
-          </div>
-        </div>`
-      : "";
-
-    return { raw, html };
-  }
-
-  async function loadStatusBox(){
-    try {
-      const { raw, html } = await fetchStatusRaw();
-      setStatusBoxHtml(html);
-      return raw;
-    } catch {
-      setStatusBoxHtml("");
-      return "";
-    }
-  }
-
-  // =======================
-  // Data
-  // =======================
   async function loadGroup(n){
     currentGroup = n;
-    applyTabs(n);
     searchEl.value = "";
     tableScroll.scrollTop = 0;
-
-    // подтянуть статус
+    updateTabsUI();
     loadStatusBox();
 
-    const range = GROUPS[n];
-    const url =
-      `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?` +
-      `sheet=${encodeURIComponent(SHEET_NAME)}&range=${encodeURIComponent(range)}&headers=1&t=${Date.now()}`;
+    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(SHEET_NAME)}&range=${encodeURIComponent(GROUPS[n])}&headers=1&t=${Date.now()}`;
 
     try{
       const res = await fetch(url);
@@ -488,239 +197,109 @@
       const table = json.table;
 
       headers = table.cols.map(c => cellText(c.label || ""));
-      rows = table.rows.map(r => (r.c || []).map(c => cellText(c ? c.v : "")));
+      rows = table.rows.map(r => (r.c || []).map(c => cellText(c ? c.v : ""))).filter(row => row.some(c => c.trim() !== ""));
 
-      detectLabelIndex();
-      detectWalkStatusIndex();
-      sortRowsByWalkStatus();
+      // Поиск колонки №метки
+      labelIndex = headers.findIndex(h => norm(h).includes("метк"));
+      walkStatusIndex = headers.findIndex(h => norm(h) === norm(STATUS_COL_NAME));
+
+      // Сортировка
+      if (walkStatusIndex !== -1) {
+        rows.sort((a,b) => {
+          const r = (v) => {
+            const s = v.trim();
+            if (s === STATUS_WAIT) return 0;
+            if (s === STATUS_DONE) return 1;
+            return 2;
+          };
+          return r(a[walkStatusIndex]) - r(b[walkStatusIndex]);
+        });
+      }
 
       labelCounts[currentGroup] = {
-        total: computeLabelCount(),
-        done: computeDoneCount()
+        total: rows.filter(r => labelIndex!==-1 && isIntLike(r[labelIndex])).length,
+        done: rows.filter(r => walkStatusIndex!==-1 && r[walkStatusIndex].trim() === STATUS_DONE).length
       };
-      applyTabs(currentGroup);
 
-      loadVisibleColsFromStorage();
-      renderFiltered();
+      updateTabsUI();
+      loadVisibleCols();
+      renderTable();
     } catch (e) {
-      console.error(e);
-      setStatusBoxHtml(`<div class="text-red-600 font-semibold">Ошибка загрузки данных</div>`);
-      thead.innerHTML = "";
-      tbody.innerHTML = `<tr><td class="px-3 py-10 text-center text-slate-500">Ошибка загрузки</td></tr>`;
+      tbody.innerHTML = `<tr><td class="p-10 text-center">Ошибка загрузки данных</td></tr>`;
     }
   }
 
-  function renderFiltered(){
-    const q = String(searchEl.value || "").trim();
-    let filtered = rows;
-
-    if (q && labelIndex !== -1) {
-      filtered = rows.filter(r => String(r[labelIndex] ?? "").trim() === q);
-    }
-    renderTable(filtered);
+  function loadVisibleCols(){
+    const key = `cols_v10_${currentGroup}_${headers.length}`;
+    const saved = localStorage.getItem(key);
+    if(saved) visibleCols = new Set(JSON.parse(saved));
+    else visibleCols = new Set(headers.map((_,i)=>i));
+    if(labelIndex !== -1) visibleCols.add(labelIndex);
   }
 
-  function renderTable(data){
-    const colIdx = getVisibleColIndices();
+  function renderTable(){
+    const q = searchEl.value.trim().toLowerCase();
+    const filtered = rows.filter(r => !q || (labelIndex !== -1 && r[labelIndex].toLowerCase().includes(q)));
+    const colIdx = headers.map((_,i)=>i).filter(i => visibleCols.has(i));
 
-    thead.innerHTML = `
-      <tr>
-        ${colIdx.map(i=>`
-          <th class="px-3 py-3 text-left font-semibold border-b whitespace-nowrap bg-slate-100">
-            ${escapeHtml(headers[i] || "—")}
-          </th>`).join("")}
-      </tr>
-    `;
-
-    if (!data.length) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="${Math.max(colIdx.length,1)}" class="px-3 py-10 text-center text-slate-500">
-            Нет данных
-          </td>
-        </tr>
-      `;
-      return;
-    }
-
-    tbody.innerHTML = data.map((row,rIdx)=> {
-      const st = (walkStatusIndex !== -1) ? String(row[walkStatusIndex] ?? "").trim() : "";
-      const isDone = (st === STATUS_DONE);
-
-      const rowClass = isDone
-        ? "bg-emerald-50"
-        : (rIdx%2 ? "bg-slate-50" : "");
-
-      const cellClass = "px-3 py-3 whitespace-nowrap";
-
-      return `
-        <tr class="${rowClass}">
-          ${colIdx.map(i=>`
-            <td class="${cellClass}">
-              ${escapeHtml(row[i] ?? "")}
-            </td>`).join("")}
-        </tr>
-      `;
-    }).join("");
+    thead.innerHTML = `<tr>${colIdx.map(i=>`<th class="px-3 py-3 text-left border-b bg-slate-100 whitespace-nowrap">${escapeHtml(headers[i]||'—')}</th>`).join('')}</tr>`;
+    
+    tbody.innerHTML = filtered.map(row => {
+      const isDone = walkStatusIndex!==-1 && row[walkStatusIndex].trim() === STATUS_DONE;
+      return `<tr class="${isDone ? 'bg-emerald-50' : ''}">
+        ${colIdx.map(i => `<td class="px-3 py-3 border-b whitespace-nowrap">${escapeHtml(row[i])}</td>`).join('')}
+      </tr>`;
+    }).join('');
   }
 
-  // =======================
-  // Modal
-  // =======================
-  function openModal(){
+  async function loadStatusBox(){
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?sheet=${encodeURIComponent(STATUS_SHEET_NAME)}&range=${encodeURIComponent(STATUS_RANGE)}&headers=0&t=${Date.now()}`;
+      const res = await fetch(url);
+      const text = await res.text();
+      const json = JSON.parse(text.substring(47).slice(0,-2));
+      const lines = json.table.rows.map(r => r.c.map(c => cellText(c?.v)).filter(Boolean).join(" ")).filter(Boolean);
+      setStatusBoxHtml(lines.length ? `<div class="flex items-center gap-2"><div class="h-2 w-2 rounded-full bg-teal-500"></div><div>${lines.map(l=>`<div>${escapeHtml(l)}</div>`).join("")}</div></div>` : "");
+    } catch { setStatusBoxHtml(""); }
+  }
+
+  // Event Listeners
+  tabs.forEach((t, i) => t.onclick = () => loadGroup(i+1));
+  searchEl.oninput = renderTable;
+  
+  columnsBtn.onclick = () => {
     draftVisibleCols = new Set(visibleCols);
-    if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
-    renderColsList();
+    colsList.innerHTML = headers.map((h, i) => `
+      <label class="flex items-center gap-3 p-2 border rounded-xl">
+        <input type="checkbox" ${draftVisibleCols.has(i)?'checked':''} ${i===labelIndex?'disabled':''} onchange="updateDraft(${i}, this.checked)">
+        <span class="text-sm">${escapeHtml(h || 'Колонка '+(i+1))}</span>
+      </label>
+    `).join('');
     modal.classList.remove("hidden");
-  }
-  function closeModalUI(){ modal.classList.add("hidden"); }
+  };
 
-  function renderColsList(){
-    const colCount = headers.length;
-    colsList.innerHTML = "";
+  window.updateDraft = (i, checked) => {
+    if(checked) draftVisibleCols.add(i); else draftVisibleCols.delete(i);
+    colsCounter.textContent = `Выбрано: ${draftVisibleCols.size}`;
+  };
 
-    for (let i=0; i<colCount; i++){
-      const name = headers[i] || `Колонка ${i+1}`;
-      const checked = draftVisibleCols.has(i);
-      const isLocked = (i === labelIndex && labelIndex !== -1);
-
-      const row = document.createElement("label");
-      row.className = "flex items-center gap-3 p-2 rounded-xl border border-slate-200 hover:bg-slate-50";
-      row.innerHTML = `
-        <input type="checkbox" class="h-4 w-4" ${checked ? "checked":""} ${isLocked ? "disabled":""}/>
-        <div class="flex-1">
-          <div class="text-sm font-semibold text-slate-800">${escapeHtml(name)}</div>
-          <div class="text-xs text-slate-500">Колонка ${i+1}${isLocked ? " • обязательная":""}</div>
-        </div>
-      `;
-
-      const cb = row.querySelector("input");
-      cb.addEventListener("change", () => {
-        if (cb.checked) draftVisibleCols.add(i);
-        else draftVisibleCols.delete(i);
-        if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
-        updateCounter();
-      });
-
-      colsList.appendChild(row);
-    }
-
-    updateCounter();
-  }
-
-  function updateCounter(){
-    const colCount = headers.length || 0;
-    colsCounter.textContent = `Показано: ${draftVisibleCols.size} из ${colCount}`;
-  }
-
-  function applyDraft(){
+  document.getElementById("applyCols").onclick = () => {
     visibleCols = new Set(draftVisibleCols);
-    if (labelIndex !== -1) visibleCols.add(labelIndex);
-    saveVisibleColsToStorage();
-    closeModalUI();
-    renderFiltered();
-  }
+    localStorage.setItem(`cols_v10_${currentGroup}_${headers.length}`, JSON.stringify(Array.from(visibleCols)));
+    modal.classList.add("hidden");
+    renderTable();
+  };
 
-  function showAllCols(){
-    draftVisibleCols = new Set(Array.from({length: headers.length}, (_,i)=>i));
-    if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
-    renderColsList();
-  }
+  document.getElementById("closeModal").onclick = () => modal.classList.add("hidden");
 
-  function showOnlyLabel(){
-    draftVisibleCols = new Set();
-    if (labelIndex !== -1) draftVisibleCols.add(labelIndex);
-    renderColsList();
-  }
-
-  // =======================
-  // Trigger call (NO CORS)
-  // =======================
-  async function runTrigger(){
-    if (!TRIGGER_WEBAPP_URL) return { ok:true, skipped:true };
-    const url = `${TRIGGER_WEBAPP_URL}?token=${encodeURIComponent(TRIGGER_TOKEN)}&t=${Date.now()}`;
-    (new Image()).src = url;
-    return { ok:true };
-  }
-
-  // =======================
-  // Two-stage polling logic
-  // =======================
-  function stopPolling(){
-    if (pollTimer) clearInterval(pollTimer);
-    pollTimer = null;
-    pollStartedAt = 0;
-    pollStage = "idle";
-
-    refreshBtn.disabled = false;
-    refreshBtn.textContent = "Обновить";
-  }
-
-  async function pollTick(){
-    const raw = await loadStatusBox();
-    const elapsed = Date.now() - pollStartedAt;
-
-    // Stage 1: wait start (up to 10s)
-    if (pollStage === "waitingStart") {
-      if (isUpdating(raw)) {
-        pollStage = "waitingFinish";
-        return;
-      }
-      if (elapsed >= START_TIMEOUT_MS) {
-        stopPolling();
-        return;
-      }
-      return;
-    }
-
-    // Stage 2: wait finish
-    if (pollStage === "waitingFinish") {
-      if (!isUpdating(raw) && hasTime(raw)) {
-        stopPolling();
-        await loadGroup(currentGroup);
-        await loadStatusBox();
-      }
-    }
-  }
-
-  async function refreshAllLive(){
-    stopPolling();
-
-    refreshBtn.disabled = true;
-    refreshBtn.textContent = "…";
-
-    await runTrigger();
-
-    await loadStatusBox();
-
-    pollStartedAt = Date.now();
-    pollStage = "waitingStart";
-    pollTimer = setInterval(pollTick, POLL_INTERVAL_MS);
-  }
-
-  // =======================
-  // Events
-  // =======================
-  tab1.onclick = ()=>loadGroup(1);
-  tab2.onclick = ()=>loadGroup(2);
-  tab3.onclick = ()=>loadGroup(3);
-
-  searchEl.oninput = renderFiltered;
-
-  refreshBtn.onclick = refreshAllLive;
-
-  columnsBtn.onclick = openModal;
-  modalBackdrop.onclick = closeModalUI;
-  closeModal.onclick = closeModalUI;
-  cancelCols.onclick = closeModalUI;
-  applyCols.onclick = applyDraft;
-  selectAll.onclick = showAllCols;
-  selectMin.onclick = showOnlyLabel;
+  refreshBtn.onclick = async () => {
+    refreshBtn.disabled = true; refreshBtn.textContent = "⌛";
+    (new Image()).src = `${TRIGGER_WEBAPP_URL}?token=${TRIGGER_TOKEN}&t=${Date.now()}`;
+    setTimeout(() => { loadGroup(currentGroup); refreshBtn.disabled = false; refreshBtn.textContent = "Обновить"; }, 3000);
+  };
 
   // Init
-  applyTabs(1);
   loadGroup(1);
 </script>
-
 </body>
 </html>
